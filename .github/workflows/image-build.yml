@@ -63,6 +63,8 @@ jobs:
     steps:
     - name: Remove old tags
       run: |
+        set -ex
+
         regctl registry set $INTERNAL_REGISTRY --cacert "$INTERNAL_CA_CERT"
         tags=$(regctl tag ls $INTERNAL_REGISTRY/${{ github.repository }} | sort -r)
         set -- $tags
