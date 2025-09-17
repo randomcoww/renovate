@@ -63,8 +63,9 @@ jobs:
     steps:
     - name: Remove old tags
       run: |
-        regctl registry set $INTERNAL_REGISTRY --cacert "$INTERNAL_CA"
-        tags=$(regctl tag ls $INTERNAL_REGISTRY/${{ github.repository }} | sort -r)
+        tags=$(regctl tag ls \
+          --host reg=$INTERNAL_REGISTRY,tls=enabled,regCert="$INTERNAL_CA" \
+          $INTERNAL_REGISTRY/${{ github.repository }} | sort -r)
         set -- $tags
 
         i=0
@@ -75,5 +76,7 @@ jobs:
 
         for tag in $@; do
           echo "Delete $tag"
-          regctl tag delete --ignore-missing $INTERNAL_REGISTRY/${{ github.repository }}:$tag
+          regctl tag delete \
+            --host reg=$INTERNAL_REGISTRY,tls=enabled,regCert="$INTERNAL_CA" \
+            --ignore-missing $INTERNAL_REGISTRY/${{ github.repository }}:$tag
         done
