@@ -27,6 +27,7 @@ jobs:
     steps:
     - name: Set tag
       run: |
+        set -e
         echo VERSION=$(wget -O - https://api.github.com/repos/renovatebot/renovate/releases/latest |grep tag_name | cut -d '"' -f 4) | tee -a "$GITHUB_ENV"
         echo TAG=$(date -u +'%Y%m%d.%H%M') | tee -a "$GITHUB_ENV"
 
@@ -43,6 +44,10 @@ jobs:
         EOF
         echo -e "$INTERNAL_CA_CERT" > $DOCKER_CONFIG/internal.crt
 
+        warmer \
+          --image=ghcr.io/renovatebot/renovate:$VERSION \
+          --cache-dir=/cache
+
         executor \
           --dockerfile="./Containerfile" \
           --context="${{ github.repositoryUrl }}#${{ github.ref }}#${{ github.sha }}" \
@@ -52,8 +57,11 @@ jobs:
           --build-arg VERSION=$VERSION \
           --build-arg INTERNAL_CA_CERT="$INTERNAL_CA_CERT" \
           --use-new-run \
+          --single-snapshot \
           --skip-unused-stages \
           --snapshot-mode=redo \
+          --cache=true \
+          --cache-dir=/cache \
           --cleanup \
           --image-download-retry=4 \
           --image-fs-extract-retry=4 \
