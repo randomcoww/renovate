@@ -17,8 +17,25 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
 
+env:
+  FF_KANIKO_SQUASH_STAGES: true # https://github.com/mzihlmann/kaniko/pull/141
+
 jobs:
+  clean:
+    runs-on: arc-runner-${{ github.event.repository.name }}
+    container:
+      image: docker.io/regclient/regctl:alpine
+    steps:
+    - name: Remove cache tags
+      run: |
+        set -e
+        regctl registry set $INTERNAL_REGISTRY --cacert "$INTERNAL_CA_CERT"
+        for tag in $(regctl tag ls $INTERNAL_REGISTRY/${{ github.repository }}/cache); do
+          regctl tag delete --ignore-missing $INTERNAL_REGISTRY/${{ github.repository }}/cache:$tag
+        done
   build:
+    needs:
+      - clean
     runs-on: arc-runner-${{ github.event.repository.name }}
     container:
       image: docker.io/martizih/kaniko:debug
@@ -57,7 +74,6 @@ jobs:
           --build-arg VERSION=$VERSION \
           --build-arg INTERNAL_CA_CERT="$INTERNAL_CA_CERT" \
           --use-new-run \
-          --single-snapshot \
           --skip-unused-stages \
           --snapshot-mode=redo \
           --cache=true \
