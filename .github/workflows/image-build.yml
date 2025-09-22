@@ -21,21 +21,7 @@ env:
   FF_KANIKO_SQUASH_STAGES: true # https://github.com/mzihlmann/kaniko/pull/141
 
 jobs:
-  clean:
-    runs-on: arc-runner-${{ github.event.repository.name }}
-    container:
-      image: docker.io/regclient/regctl:alpine
-    steps:
-    - name: Remove cache tags
-      run: |
-        set -e
-        regctl registry set $INTERNAL_REGISTRY --cacert "$INTERNAL_CA_CERT"
-        for tag in $(regctl tag ls $INTERNAL_REGISTRY/${{ github.repository }}/cache); do
-          regctl tag delete --ignore-missing $INTERNAL_REGISTRY/${{ github.repository }}/cache:$tag
-        done
   build:
-    needs:
-      - clean
     runs-on: arc-runner-${{ github.event.repository.name }}
     container:
       image: docker.io/martizih/kaniko:debug
@@ -61,10 +47,6 @@ jobs:
         EOF
         echo -e "$INTERNAL_CA_CERT" > $DOCKER_CONFIG/internal.crt
 
-        warmer \
-          --image=ghcr.io/renovatebot/renovate:$VERSION \
-          --cache-dir=/cache
-
         executor \
           --dockerfile="./Containerfile" \
           --context="${{ github.repositoryUrl }}#${{ github.ref }}#${{ github.sha }}" \
@@ -76,8 +58,6 @@ jobs:
           --use-new-run \
           --skip-unused-stages \
           --snapshot-mode=redo \
-          --cache=true \
-          --cache-dir=/cache \
           --cleanup \
           --image-download-retry=4 \
           --image-fs-extract-retry=4 \
