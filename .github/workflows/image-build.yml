@@ -21,7 +21,7 @@ jobs:
   build:
     runs-on: arc-runner-${{ github.event.repository.name }}
     container:
-      image: registry.default/randomcoww/kaniko:v1.25.5.20250922.0042
+      image: registry.default/randomcoww/kaniko:latest
     permissions:
       contents: read
     steps:
@@ -44,7 +44,7 @@ jobs:
         EOF
         echo -e "$INTERNAL_CA_CERT" > $DOCKER_CONFIG/internal.crt
 
-        /kaniko-build/executor \
+        /kaniko/executor \
           --dockerfile="./Containerfile" \
           --context="${{ github.repositoryUrl }}#${{ github.ref }}#${{ github.sha }}" \
           --destination="$INTERNAL_REGISTRY/${{ github.repository }}:v$VERSION.$TAG" \
